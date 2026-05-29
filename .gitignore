@@ -6,7 +6,7 @@
 out/
 *.class
 
-# Eclipse (since you tried opening it there)
+# Eclipse
 .project
 .classpath
 .settings/
