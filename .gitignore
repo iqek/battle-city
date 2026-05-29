@@ -1,0 +1,16 @@
+# IntelliJ
+.idea/
+*.iml
+
+# Compiled output
+out/
+*.class
+
+# Eclipse (since you tried opening it there)
+.project
+.classpath
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
