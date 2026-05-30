@@ -1,11 +1,14 @@
 package ui;
 
 import controller.GameController;
+import controller.GameEndListener;
 import model.GameMap;
+import model.HighScore;
+import model.HighScoreManager;
 
 import javax.swing.*;
 
-public class MainFrame extends JFrame {
+public class MainFrame extends JFrame implements GameEndListener {
 
     private GamePanel gamePanel;
     private GameController gameController;
@@ -13,6 +16,7 @@ public class MainFrame extends JFrame {
     private LevelSelectPanel levelSelectPanel;
     private GameMap gameMap;
     private HelpPanel helpPanel;
+    private HighScorePanel highScorePanel;
 
     public MainFrame(){
         setTitle("battlecity");
@@ -27,6 +31,8 @@ public class MainFrame extends JFrame {
         mapEditorPanel = new MapEditorPanel();
         levelSelectPanel = new LevelSelectPanel(this);
         helpPanel = new HelpPanel();
+        highScorePanel = new HighScorePanel();
+        gameController.setGameEndListener(this);
         setContentPane(mapEditorPanel);
         setJMenuBar(createMenuBar());
 
@@ -59,7 +65,12 @@ public class MainFrame extends JFrame {
         });
 
         JMenu scoresMenu = new JMenu("Scores");
-        scoresMenu.add(new JMenuItem("High Scores"));
+        scoresMenu.add(new JMenuItem("High Scores")).addActionListener(e -> {
+            highScorePanel.refresh();
+            setContentPane(highScorePanel);
+            revalidate();
+            repaint();
+        });
 
         JMenu helpMenu = new JMenu("Help");
         helpMenu.add(new JMenuItem("Help")).addActionListener(e -> {
@@ -92,5 +103,22 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Could not load map: " + mapName);
         }
+    }
+
+    public void onGameEnd(boolean won, int score) {
+        String message = won ? "You win! Score: " + score : "Game Over! Score: " + score;
+        String name = JOptionPane.showInputDialog(this, message + "\nEnter your name:");
+
+        if (name != null && !name.isBlank()) {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            String date = now.toLocalDate().toString();
+            String time = String.format("%02d:%02d", now.getHour(), now.getMinute());
+            HighScoreManager.save(new HighScore(name, score, date, time, gamePanel.getCurrentLevel()));
+        }
+
+        highScorePanel.refresh();
+        setContentPane(highScorePanel);
+        revalidate();
+        repaint();
     }
 }

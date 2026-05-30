@@ -8,7 +8,7 @@ public class GameMap {
     public static final int ROWS = 26;
     public static final int COLS = 26;
 
-    public static final int CELL_PX = 24;
+    public static final int CELL_PX = GameConstants.CELL_SIZE;
 
     private TileType[][] grid;
     private int[][] health;
@@ -31,10 +31,7 @@ public class GameMap {
 
     public void setTile(int row, int col, TileType type) {
         grid[row][col] = type;
-        health[row][col] = switch(type){
-            case BRICK,STEEL -> 4;
-            default -> 0;
-        };
+        health[row][col] = type.initialHealth();
     }
 
     public void saveToFile(String path) throws IOException{

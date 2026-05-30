@@ -1,51 +1,59 @@
 package controller;
 
 import model.GameMap;
-import model.TileType;
-import model.entities.Bullet;
-import model.entities.PlayerTank;
-import model.entities.PowerUp;
-import model.entities.PowerUpType;
-import model.entities.Tank;
+import model.entities.*;
 import ui.GamePanel;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class GameController implements Runnable {
 
     private static final int FPS = 60;
     private static final long NS_PER_FRAME = 1_000_000_000 / FPS;
 
-    private static final int SPAWN_INTERVAL = 600; // 10 seconds at 60 fps
+    private static final int PLAYER_START_X = Tank.SIZE * 4;
+    private static final int PLAYER_START_Y = Tank.SIZE * 6;
 
-    private List<Bullet>  bullets  = new ArrayList<>();
-    private List<PowerUp> powerUps = new ArrayList<>();
-    private int spawnTimer = 0;
-    private final Random random = new Random();
-
+    private Eagle eagle;
     private PlayerTank player;
-    private GameMap map;
-    private GamePanel gamePanel;
-    private InputHandler inputHandler;
+    private final GameMap map;
+    private final GamePanel gamePanel;
+    private final InputHandler inputHandler;
+    private GameEndListener gameEndListener;
 
+    private final EnemyManager enemyManager;
+    private final PowerUpManager powerUpManager;
+    private final List<Bullet> bullets = new ArrayList<>();
+
+    private int score = 0;
+    private volatile boolean paused = false;
     private boolean running;
     private Thread gameThread;
 
     public GameController(GameMap map, GamePanel gamePanel) {
         this.map = map;
         this.gamePanel = gamePanel;
-        this.player = new PlayerTank(48 * 4, 48 * 6, map);
+        this.player = new PlayerTank(PLAYER_START_X, PLAYER_START_Y, map);
         this.inputHandler = new InputHandler(player);
+        this.enemyManager = new EnemyManager(map);
+        this.powerUpManager = new PowerUpManager(map);
 
         gamePanel.addKeyListener(inputHandler);
         gamePanel.setFocusable(true);
     }
 
-    public void start(){
+    public void start() {
+        eagle = new Eagle();
+        player.reset(PLAYER_START_X, PLAYER_START_Y);
+        bullets.clear();
+        enemyManager.reset();
+        powerUpManager.reset();
+        score = 0;
         running = true;
-        gameThread = new Thread(this); // Creates a thread that executes the run() method of the specified Runnable object
+        paused = false;
+        gameThread = new Thread(this);
         gameThread.start();
     }
 
@@ -60,15 +68,14 @@ public class GameController implements Runnable {
 
     @Override
     public void run() {
-        while(running){
+        while (running) {
             long start = System.nanoTime();
 
-            update();
+            if (!paused) update();
             gamePanel.repaint();
 
             long elapsed = System.nanoTime() - start;
             long sleepTime = NS_PER_FRAME - elapsed;
-
             if (sleepTime > 0) {
                 try {
                     Thread.sleep(sleepTime / 1_000_000);
@@ -79,103 +86,101 @@ public class GameController implements Runnable {
         }
     }
 
-    public void update(){
-        player.update();
-        if(inputHandler.consumeFireRequest()) tryFire();
-        updateBullets();
-        spawnTimer++;
-        if (spawnTimer >= SPAWN_INTERVAL) {
-            spawnTimer = 0;
-            trySpawnPowerUp();
+    public void update() {
+        if (eagle.isDestroyed() || !player.isAlive()) {
+            triggerGameEnd(false);
+            return;
         }
-        checkPowerUpCollisions();
+        if (enemyManager.allEnemiesDefeated()) {
+            triggerGameEnd(true);
+            return;
+        }
+
+        player.update();
+        if (inputHandler.consumeFireRequest()) tryFire();
+        updateBullets();
+
+        enemyManager.update();
+        checkPlayerBulletEnemyCollisions();
+        checkEnemyBulletPlayerCollision();
+        checkBulletEagleCollision();
+
+        powerUpManager.update(player);
     }
 
-    private synchronized void updateBullets(){
-        for (Bullet b : bullets) {
-            b.update();
-        }
-
-        List<Bullet> toRemove = new ArrayList<>();
-        for (Bullet b : bullets) {
-            if (!b.isAlive()) {
-                toRemove.add(b);
-            }
-        }
-        bullets.removeAll(toRemove);
+    private synchronized void updateBullets() {
+        for (Bullet b : bullets) b.update();
+        bullets.removeIf(b -> !b.isAlive());
     }
 
     public synchronized void tryFire() {
-
-        int activeBullets = 0;
-        for (Bullet b : bullets) {
-            if (b.isAlive()) activeBullets++;
-        }
-
+        long activeBullets = bullets.stream().filter(Bullet::isAlive).count();
         if (activeBullets >= player.getMaxBullets()) return;
 
-        int bx, by;
-        int half = (48 - Bullet.SIZE) / 2;
-        int tankSize = 48;
-        Tank.Direction dir = player.getDirection();
-
-        if (dir == Tank.Direction.UP) {
-            bx = player.getX() + half;
-            by = player.getY() - Bullet.SIZE;
-        } else if (dir == Tank.Direction.DOWN) {
-            bx = player.getX() + half;
-            by = player.getY() + tankSize;
-        } else if (dir == Tank.Direction.LEFT) {
-            bx = player.getX() - Bullet.SIZE;
-            by = player.getY() + half;
-        } else { // RIGHT
-            bx = player.getX() + tankSize;
-            by = player.getY() + half;
-        }
-
-        bullets.add(new Bullet(bx, by, dir, player.getStars(), map));
+        Point origin = player.getBulletSpawnPoint(Bullet.SIZE);
+        bullets.add(new Bullet(origin.x, origin.y, player.getDirection(), player.getStars(), map));
     }
 
-    private void trySpawnPowerUp() {
-        // only one powerup on screen at a time
-        if (!powerUps.isEmpty()) return;
-
-        // collect all empty cells
-        List<int[]> emptyCells = new ArrayList<>();
-        for (int row = 1; row < GameMap.ROWS - 1; row++) {
-            for (int col = 1; col < GameMap.COLS - 1; col++) {
-                if (map.getTile(row, col) == TileType.EMPTY) {
-                    emptyCells.add(new int[]{row, col});
+    private void checkPlayerBulletEnemyCollisions() {
+        List<EnemyTank> enemies = enemyManager.getEnemies();
+        bullets.removeIf(b -> {
+            for (EnemyTank e : enemies) {
+                if (CollisionManager.overlaps(b, e)) {
+                    e.loseLife();
+                    if (!e.isAlive()) addScore(100);
+                    return true;
                 }
             }
-        }
-        if (emptyCells.isEmpty()) return;
-
-        int[] cell = emptyCells.get(random.nextInt(emptyCells.size()));
-        int px = cell[1] * GameMap.CELL_PX;
-        int py = cell[0] * GameMap.CELL_PX;
-
-        PowerUpType type = (random.nextBoolean()) ? PowerUpType.STAR : PowerUpType.LIFE;
-        powerUps.add(new PowerUp(px, py, type));
+            return false;
+        });
     }
 
-    private void checkPowerUpCollisions() {
-        List<PowerUp> toRemove = new ArrayList<>();
-        for (PowerUp pu : powerUps) {
-            if (CollisionManager.overlaps(player, pu)) {
-                if (pu.getType() == PowerUpType.STAR) {
-                    player.addStar();
-                } else if (pu.getType() == PowerUpType.LIFE) {
-                    player.addLife();
-                }
-                toRemove.add(pu);
+    private void checkEnemyBulletPlayerCollision() {
+        for (Bullet b : enemyManager.getEnemyBullets()) {
+            if (CollisionManager.overlaps(b, player)) {
+                player.loseLife();
+                b.setAlive(false); // cleaned up by EnemyManager on next update
             }
         }
-        powerUps.removeAll(toRemove);
     }
 
-    public PlayerTank getPlayer() { return player; }
-    public InputHandler getInputHandler() { return inputHandler; }
-    public synchronized List<Bullet> getBullets() { return new ArrayList<>(bullets); }
-    public List<PowerUp> getPowerUps() { return new ArrayList<>(powerUps); }
+    private void checkBulletEagleCollision() {
+        for (Bullet b : bullets) {
+            if (CollisionManager.overlaps(b, eagle)) {
+                eagle.destroy();
+                b.setAlive(false);
+                return;
+            }
+        }
+        for (Bullet b : enemyManager.getEnemyBullets()) {
+            if (CollisionManager.overlaps(b, eagle)) {
+                eagle.destroy();
+                b.setAlive(false);
+                return;
+            }
+        }
+    }
+
+    private void triggerGameEnd(boolean won) {
+        running = false;
+        if (gameEndListener != null) {
+            javax.swing.SwingUtilities.invokeLater(() -> gameEndListener.onGameEnd(won, score));
+        }
+    }
+
+    public void addScore(int points)            { score += points; }
+    public int  getScore()                      { return score; }
+
+    public Eagle          getEagle()            { return eagle; }
+    public PlayerTank     getPlayer()           { return player; }
+    public InputHandler   getInputHandler()     { return inputHandler; }
+    public synchronized List<Bullet>    getBullets()       { return new ArrayList<>(bullets); }
+    public List<EnemyTank> getEnemies()         { return enemyManager.getEnemies(); }
+    public List<Bullet>   getEnemyBullets()     { return enemyManager.getEnemyBullets(); }
+    public List<PowerUp>  getPowerUps()         { return powerUpManager.getPowerUps(); }
+
+    public void togglePause()  { paused = !paused; }
+    public boolean isPaused()  { return paused; }
+
+    public void setGameEndListener(GameEndListener listener) { this.gameEndListener = listener; }
 }
