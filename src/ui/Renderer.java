@@ -2,14 +2,13 @@ package ui;
 
 import controller.GameController;
 import model.GameMap;
-import model.entities.Bullet;
-import model.entities.PlayerTank;
-import model.entities.PowerUp;
-import model.entities.PowerUpType;
+import model.TileType;
+import model.entities.*;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 
-// Draws all game world objects: map tiles, player, bullets, powerups.
+// Draws all game world objects: map tiles, player, bullets, power-ups, enemies
 public class Renderer {
 
     private final GameController gameController;
@@ -24,25 +23,27 @@ public class Renderer {
 
     public void render(Graphics g) {
         drawMap(g);
+        drawEagle(g);
         drawBullets(g);
+        drawEnemyBullets(g);
         drawPowerUps(g);
         drawPlayer(g);
-        drawMapBushes(g);  // drawn last so bushes appear on top
+        drawEnemies(g);
+        drawMapBushes(g); // drawn last so bushes appear on top
     }
 
     private void drawMap(Graphics g) {
         for (int row = 0; row < GameMap.ROWS; row++) {
             for (int col = 0; col < GameMap.COLS; col++) {
-                model.TileType tile = map.getTile(row, col);
-                if (tile == model.TileType.BUSH) continue;  // drawn in second pass
+                TileType tile = map.getTile(row, col);
+                if (tile == TileType.BUSH) continue; // drawn in second pass
 
-                int[] coords = Sprites.coordsForTile(tile);
                 int x = col * Sprites.DRAW_SIZE;
                 int y = row * Sprites.DRAW_SIZE;
 
-                if (coords != null) {
-                    g.drawImage(sprites.getSprite(coords[0], coords[1]),
-                            x, y, Sprites.DRAW_SIZE, Sprites.DRAW_SIZE, null);
+                BufferedImage sprite = sprites.getSpriteForTile(tile);
+                if (sprite != null) {
+                    g.drawImage(sprite, x, y, Sprites.DRAW_SIZE, Sprites.DRAW_SIZE, null);
                 } else {
                     g.setColor(Color.BLACK);
                     g.fillRect(x, y, Sprites.DRAW_SIZE, Sprites.DRAW_SIZE);
@@ -54,9 +55,8 @@ public class Renderer {
     private void drawMapBushes(Graphics g) {
         for (int row = 0; row < GameMap.ROWS; row++) {
             for (int col = 0; col < GameMap.COLS; col++) {
-                if (map.getTile(row, col) != model.TileType.BUSH) continue;
-                int[] coords = Sprites.coordsForTile(model.TileType.BUSH);
-                g.drawImage(sprites.getSprite(coords[0], coords[1]),
+                if (map.getTile(row, col) != TileType.BUSH) continue;
+                g.drawImage(sprites.getBush(),
                         col * Sprites.DRAW_SIZE, row * Sprites.DRAW_SIZE,
                         Sprites.DRAW_SIZE, Sprites.DRAW_SIZE, null);
             }
@@ -67,22 +67,32 @@ public class Renderer {
         PlayerTank player = gameController.getPlayer();
         if (player == null) return;
 
-        int[] coords = switch (player.getDirection()) {
-            case UP -> Sprites.PLAYER_UP;
-            case DOWN -> Sprites.PLAYER_DOWN;
-            case LEFT -> Sprites.PLAYER_LEFT;
-            case RIGHT -> Sprites.PLAYER_RIGHT;
+        BufferedImage sprite = switch (player.getDirection()) {
+            case UP    -> sprites.getPlayerUp();
+            case DOWN  -> sprites.getPlayerDown();
+            case LEFT  -> sprites.getPlayerLeft();
+            case RIGHT -> sprites.getPlayerRight();
         };
 
-        g.drawImage(sprites.getLargeSprite(coords[0], coords[1]),
-                player.getX(), player.getY(), Sprites.DRAW_SIZE * 2, Sprites.DRAW_SIZE * 2, null);
+        g.drawImage(sprite, player.getX(), player.getY(), Tank.SIZE, Tank.SIZE, null);
     }
 
-    private void drawPowerUps(Graphics g) {
-        for (PowerUp pu : gameController.getPowerUps()) {
-            int[] coords = (pu.getType() == PowerUpType.STAR) ? Sprites.PU_STAR : Sprites.PU_TANK;
-            g.drawImage(sprites.getLargeSprite(coords[0], coords[1]),
-                    pu.getX(), pu.getY(), 24, 24, null);
+    private void drawEnemies(Graphics g) {
+        for (EnemyTank e : gameController.getEnemies()) {
+            BufferedImage sprite = switch (e.getDirection()) {
+                case UP    -> sprites.getEnemyUp();
+                case DOWN  -> sprites.getEnemyDown();
+                case LEFT  -> sprites.getEnemyLeft();
+                case RIGHT -> sprites.getEnemyRight();
+            };
+            g.drawImage(sprite, e.getX(), e.getY(), Tank.SIZE, Tank.SIZE, null);
+        }
+    }
+
+    private void drawEnemyBullets(Graphics g) {
+        g.setColor(Color.RED);
+        for (Bullet b : gameController.getEnemyBullets()) {
+            g.fillRect(b.getX(), b.getY(), Bullet.SIZE, Bullet.SIZE);
         }
     }
 
@@ -91,5 +101,21 @@ public class Renderer {
         for (Bullet b : gameController.getBullets()) {
             g.fillRect(b.getX(), b.getY(), Bullet.SIZE, Bullet.SIZE);
         }
+    }
+
+    private void drawPowerUps(Graphics g) {
+        for (PowerUp pu : gameController.getPowerUps()) {
+            BufferedImage sprite = switch (pu.getType()) {
+                case STAR -> sprites.getPuStar();
+                case LIFE -> sprites.getPuTank();
+            };
+            g.drawImage(sprite, pu.getX(), pu.getY(), 24, 24, null);
+        }
+    }
+
+    private void drawEagle(Graphics g) {
+        Eagle eagle = gameController.getEagle();
+        BufferedImage sprite = eagle.isDestroyed() ? sprites.getEagleDead() : sprites.getEagle();
+        g.drawImage(sprite, Eagle.X, Eagle.Y, Tank.SIZE, Tank.SIZE, null);
     }
 }

@@ -162,10 +162,8 @@ public class MapEditorPanel extends JPanel {
         }
     }
 
-    private BufferedImage getSpriteForTile(TileType type){
-        int[] coords = Sprites.coordsForTile(type);
-        if (coords == null) return null;
-        return spriteSheet.getSprite(coords[0], coords[1]);
+    private BufferedImage getSpriteForTile(TileType type) {
+        return spriteSheet.getSpriteForTile(type);
     }
 
 }

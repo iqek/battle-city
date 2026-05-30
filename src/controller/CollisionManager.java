@@ -19,8 +19,7 @@ public class CollisionManager {
             int col = cx[i] / GameMap.CELL_PX;
             int row = cy[i] / GameMap.CELL_PX;
             if (col < 0 || col >= GameMap.COLS || row < 0 || row >= GameMap.ROWS) continue;
-            TileType tile = map.getTile(row, col);
-            if (tile == TileType.BRICK || tile == TileType.STEEL || tile == TileType.WATER)
+            if (map.getTile(row, col).blocksMovement())
                 return true;
         }
         return false;

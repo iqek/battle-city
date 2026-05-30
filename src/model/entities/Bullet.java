@@ -51,12 +51,8 @@ public class Bullet extends Entity {
 
             TileType tile = map.getTile(row, col);
 
-            if(tile == TileType.BRICK){
-                map.applyDamage(row, col, damage);
-                setAlive(false);
-                return;
-            } else if(tile == TileType.STEEL){
-                if(canBreakSteel)
+            if (tile == TileType.BRICK || tile == TileType.STEEL) {
+                if (tile == TileType.BRICK || canBreakSteel)
                     map.applyDamage(row, col, damage);
                 setAlive(false);
                 return;

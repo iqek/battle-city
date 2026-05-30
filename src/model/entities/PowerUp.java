@@ -2,7 +2,7 @@ package model.entities;
 
 public class PowerUp extends Entity {
 
-    public static final int SIZE = 48;  // drawn at same size as the tank
+    public static final int SIZE = Tank.SIZE;  // drawn at same size as the tank
 
     private final PowerUpType type;
 

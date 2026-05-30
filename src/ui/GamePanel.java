@@ -6,70 +6,65 @@ import model.GameMap;
 import javax.swing.*;
 import java.awt.*;
 
+// Pure game canvas — only responsible for rendering the game world
 public class GamePanel extends JPanel {
 
+    private final GameMap map;
+    private final Sprites sprites;
+    private final HudPanel hudPanel;
     private GameController gameController;
-    private GameMap map;
     private Renderer renderer;
-    private Sprites sprites;
     private String currentLevel = "";
-    private int score = 0;
 
     public GamePanel(GameMap map) {
         this.map = map;
+        this.hudPanel = new HudPanel();
 
         try {
             sprites = new Sprites("/images/sprites.png");
         } catch (Exception e) {
             e.printStackTrace();
+            throw new RuntimeException("Could not load sprites", e);
         }
 
-        setPreferredSize(new Dimension(GameMap.COLS * Sprites.DRAW_SIZE + 192, GameMap.ROWS * Sprites.DRAW_SIZE));
-        setBackground(Color.BLACK);
-        setFocusable(true);
+        setLayout(new BorderLayout());
+        add(createCanvas(), BorderLayout.CENTER);
+        add(hudPanel, BorderLayout.EAST);
+    }
+
+    // The canvas is its own panel so paintComponent only covers the game area
+    private JPanel createCanvas() {
+        JPanel canvas = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (renderer != null) renderer.render(g);
+                // Update HUD labels here — paintComponent always runs on EDT
+                if (gameController != null) {
+                    hudPanel.update(currentLevel, gameController.getScore(),
+                            gameController.getPlayer().getLives());
+                }
+            }
+        };
+        canvas.setBackground(Color.BLACK);
+        canvas.setPreferredSize(new Dimension(
+                GameMap.COLS * Sprites.DRAW_SIZE,
+                GameMap.ROWS * Sprites.DRAW_SIZE));
+        return canvas;
     }
 
     public void setGameController(GameController gc) {
         this.gameController = gc;
         this.renderer = new Renderer(gc, map, sprites);
+
+        JButton pauseButton = hudPanel.getPauseButton();
+        pauseButton.addActionListener(e -> {
+            gameController.togglePause();
+            pauseButton.setText(gameController.isPaused() ? "RESUME" : "PAUSE");
+            this.requestFocusInWindow();
+        });
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        if (renderer != null) renderer.render(g);
-        drawHUD(g);
-    }
-
-    private void drawHUD(Graphics g) {
-        int hudX = GameMap.COLS * Sprites.DRAW_SIZE;
-        int panelWidth = 215;
-        int panelHeight = GameMap.ROWS * Sprites.DRAW_SIZE;
-
-        g.setColor(new Color(80, 80, 80));
-        g.fillRect(hudX, 0, panelWidth, panelHeight);
-
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial", Font.BOLD, 14));
-        g.drawString("STAGE", hudX + 20, 60);
-        g.setFont(new Font("Arial", Font.PLAIN, 13));
-        g.drawString(currentLevel, hudX + 20, 80);
-
-        g.setFont(new Font("Arial", Font.BOLD, 14));
-        g.drawString("SCORE", hudX + 20, 140);
-        g.setFont(new Font("Arial", Font.PLAIN, 13));
-        g.drawString(String.valueOf(score), hudX + 20, 160);
-
-        g.setFont(new Font("Arial", Font.BOLD, 14));
-        g.drawString("LIVES", hudX + 20, 220);
-        g.setFont(new Font("Arial", Font.PLAIN, 13));
-        if (gameController != null) {
-            g.drawString("<3 x" + gameController.getPlayer().getLives(), hudX + 20, 240);
-        }
-    }
-
-    public void setCurrentLevel(String level) { this.currentLevel = level; }
-    public void addScore(int points) { score += points; }
-    public int  getScore(){ return score; }
-    public void resetScore(){ score = 0; }
+    public String getCurrentLevel()             { return currentLevel; }
+    public void   setCurrentLevel(String level) { currentLevel = level; }
 }
