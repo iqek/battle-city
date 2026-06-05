@@ -1,22 +1,29 @@
-package model.entities;
+package core.entities;
 
 import controller.CollisionManager;
-import model.GameMap;
-import model.TileType;
+import core.GameMap;
+import core.TileType;
 
-public class Bullet extends Entity {
+public class Bullet extends Entity{
+
     public static final int SIZE = 6;
     public static final int SPEED = 6;
 
     private Tank.Direction direction;
+    private final int speed;
     private int damage;
     private boolean canBreakSteel;
     private final GameMap map;
 
     public Bullet(int x, int y, Tank.Direction direction, int stars, GameMap map) {
+        this(x, y, direction, stars, SPEED, map);
+    }
+
+    public Bullet(int x, int y, Tank.Direction direction, int stars, int speed, GameMap map) {
         super(x, y, SIZE, SIZE);
         this.direction = direction;
         this.map = map;
+        this.speed = speed;
         this.damage = (stars >= 2) ? 4 : 1;
         this.canBreakSteel = (stars == 3);
     }
@@ -36,6 +43,7 @@ public class Bullet extends Entity {
         }
 
         checkWallCollision();
+
     }
 
     private void checkWallCollision(){
@@ -46,8 +54,7 @@ public class Bullet extends Entity {
             int col = cx[i] / GameMap.CELL_PX;
             int row = cy[i] / GameMap.CELL_PX;
 
-            if (col < 0 || col >= GameMap.COLS || row < 0 || row >= GameMap.ROWS)
-                continue;
+            if (col < 0 || col >= GameMap.COLS || row < 0 || row >= GameMap.ROWS) continue;
 
             TileType tile = map.getTile(row, col);
 

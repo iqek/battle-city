@@ -1,7 +1,7 @@
 package ui;
 
-import model.HighScore;
-import model.HighScoreManager;
+import core.HighScore;
+import core.HighScoreManager;
 
 import javax.swing.*;
 import java.awt.*;

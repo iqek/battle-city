@@ -1,12 +1,12 @@
 package controller;
 
-import model.entities.PlayerTank;
-import model.entities.Tank.Direction;
-
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
-public class InputHandler implements KeyListener {
+import core.entities.PlayerTank;
+import core.entities.Tank.Direction;
+
+public class InputHandler implements KeyListener{
 
     private boolean fireRequested;
     PlayerTank player;

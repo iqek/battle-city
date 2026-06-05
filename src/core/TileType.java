@@ -1,16 +1,15 @@
-package model;
+package core;
 
 public enum TileType {
     EMPTY, BRICK, STEEL, WATER, BUSH, ICE;
 
-    // Whether tanks and bullets cannot pass through this tile
     public boolean blocksMovement() {
         return this == BRICK || this == STEEL || this == WATER;
     }
 
-    // How much health this tile starts with (0 means indestructible or empty)
     public int initialHealth() {
-        return (this == BRICK || this == STEEL) ? 4 : 0;
+        if(this == BRICK || this == STEEL) return 4;
+        return 0;
     }
 
     public static TileType fromInt(int i) {

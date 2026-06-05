@@ -1,12 +1,11 @@
 package controller;
 
-import model.GameMap;
-import model.TileType;
-import model.entities.Entity;
+import core.GameMap;
+import core.entities.Entity;
 
 public class CollisionManager {
 
-    public static boolean isOutOfBounds(int x, int y, int width, int height){
+    public static boolean isOutOfBounds(int x, int y, int width, int height) {
         int mapSize = GameMap.COLS * GameMap.CELL_PX;
         return x < 0 || y < 0 || x + width > mapSize || y + height > mapSize;
     }
@@ -26,9 +25,6 @@ public class CollisionManager {
     }
 
     public static boolean overlaps(Entity a, Entity b) {
-        return a.getX() < b.getX() + b.getWidth()
-                && a.getX() + a.getWidth()  > b.getX()
-                && a.getY() < b.getY() + b.getHeight()
-                && a.getY() + a.getHeight() > b.getY();
+        return a.getBounds().intersects(b.getBounds());
     }
 }

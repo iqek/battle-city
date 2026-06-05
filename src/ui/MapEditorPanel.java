@@ -1,7 +1,7 @@
 package ui;
 
-import model.TileType;
-import model.GameMap;
+import core.TileType;
+import core.GameMap;
 
 import javax.swing.*;
 import java.awt.*;

@@ -1,4 +1,4 @@
-package model;
+package core;
 
 public class HighScore {
     private String name;

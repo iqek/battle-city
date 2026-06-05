@@ -1,7 +1,8 @@
-package model.entities;
+package core.entities;
+
+import java.awt.Rectangle;
 
 public abstract class Entity {
-
     protected int x;
     protected int y;
     protected int width;
@@ -18,10 +19,11 @@ public abstract class Entity {
 
     public abstract void update();
 
+    public Rectangle getBounds() { return new Rectangle(x,y,width,height); }
+
     public int getX() { return x; }
     public int getY() { return y; }
-    public int getWidth() { return width; }
-    public int getHeight() { return height; }
     public boolean isAlive() { return alive; }
     public void setAlive(boolean alive) { this.alive = alive; }
 }
+

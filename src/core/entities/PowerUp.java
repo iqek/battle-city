@@ -1,8 +1,8 @@
-package model.entities;
+package core.entities;
 
 public class PowerUp extends Entity {
 
-    public static final int SIZE = Tank.SIZE;  // drawn at same size as the tank
+    public static final int SIZE = Tank.SIZE;
 
     private final PowerUpType type;
 
@@ -12,9 +12,8 @@ public class PowerUp extends Entity {
     }
 
     @Override
-    public void update() {
-        // powerups don't move
-    }
+    public void update() {}
 
     public PowerUpType getType() { return type; }
 }
+

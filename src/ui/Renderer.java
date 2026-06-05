@@ -1,14 +1,14 @@
 package ui;
 
-import controller.GameController;
-import model.GameMap;
-import model.TileType;
-import model.entities.*;
-
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
-// Draws all game world objects: map tiles, player, bullets, power-ups, enemies
+import controller.GameController;
+import core.GameMap;
+import core.TileType;
+import core.entities.*;
+
 public class Renderer {
 
     private final GameController gameController;
@@ -68,13 +68,19 @@ public class Renderer {
         if (player == null) return;
 
         BufferedImage sprite = switch (player.getDirection()) {
-            case UP    -> sprites.getPlayerUp();
-            case DOWN  -> sprites.getPlayerDown();
-            case LEFT  -> sprites.getPlayerLeft();
+            case UP -> sprites.getPlayerUp();
+            case DOWN -> sprites.getPlayerDown();
+            case LEFT -> sprites.getPlayerLeft();
             case RIGHT -> sprites.getPlayerRight();
         };
 
-        g.drawImage(sprite, player.getX(), player.getY(), Tank.SIZE, Tank.SIZE, null);
+        int px = player.getX() - Tank.DRAW_OFFSET;
+        int py = player.getY() - Tank.DRAW_OFFSET;
+        g.drawImage(sprite, px, py, Tank.SIZE, Tank.SIZE, null);
+
+        if (player.hasShield()) {
+            g.drawRect(px - 2, py - 2, Tank.SIZE + 4, Tank.SIZE + 4);
+        }
     }
 
     private void drawEnemies(Graphics g) {
@@ -85,7 +91,7 @@ public class Renderer {
                 case LEFT  -> sprites.getEnemyLeft();
                 case RIGHT -> sprites.getEnemyRight();
             };
-            g.drawImage(sprite, e.getX(), e.getY(), Tank.SIZE, Tank.SIZE, null);
+            g.drawImage(sprite, e.getX() - Tank.DRAW_OFFSET, e.getY() - Tank.DRAW_OFFSET, Tank.SIZE, Tank.SIZE, null);
         }
     }
 
@@ -106,8 +112,12 @@ public class Renderer {
     private void drawPowerUps(Graphics g) {
         for (PowerUp pu : gameController.getPowerUps()) {
             BufferedImage sprite = switch (pu.getType()) {
+                case TANK-> sprites.getPuTank();
                 case STAR -> sprites.getPuStar();
-                case LIFE -> sprites.getPuTank();
+                case BOMB-> sprites.getPuBomb();
+                case CLOCK-> sprites.getPuClock();
+                case SHOVEL-> sprites.getPuShovel();
+                case SHIELD-> sprites.getPuShield();
             };
             g.drawImage(sprite, pu.getX(), pu.getY(), 24, 24, null);
         }
