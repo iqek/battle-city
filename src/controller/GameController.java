@@ -1,20 +1,21 @@
 package controller;
 
-import model.GameMap;
-import model.entities.*;
-import ui.GamePanel;
-
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GameController implements Runnable {
+import core.Difficulty;
+import core.GameMap;
+import core.entities.*;
+import ui.GamePanel;
+
+public class GameController implements Runnable{
 
     private static final int FPS = 60;
     private static final long NS_PER_FRAME = 1_000_000_000 / FPS;
 
-    private static final int PLAYER_START_X = Tank.SIZE * 4;
-    private static final int PLAYER_START_Y = Tank.SIZE * 6;
+    private static final int PLAYER_START_X = 8  * GameMap.CELL_PX;
+    private static final int PLAYER_START_Y = 24 * GameMap.CELL_PX;
 
     private Eagle eagle;
     private PlayerTank player;
@@ -28,17 +29,18 @@ public class GameController implements Runnable {
     private final List<Bullet> bullets = new ArrayList<>();
 
     private int score = 0;
-    private volatile boolean paused = false;
-    private boolean running;
+    private Difficulty difficulty = Difficulty.NORMAL;
     private Thread gameThread;
+    private boolean running = false;
+    private boolean paused  = false;
 
     public GameController(GameMap map, GamePanel gamePanel) {
         this.map = map;
         this.gamePanel = gamePanel;
-        this.player = new PlayerTank(PLAYER_START_X, PLAYER_START_Y, map);
+        this.player = new PlayerTank(Tank.SIZE * 4, Tank.SIZE * 6, map);
         this.inputHandler = new InputHandler(player);
         this.enemyManager = new EnemyManager(map);
-        this.powerUpManager = new PowerUpManager(map);
+        this.powerUpManager = new PowerUpManager(map, enemyManager);
 
         gamePanel.addKeyListener(inputHandler);
         gamePanel.setFocusable(true);
@@ -48,17 +50,17 @@ public class GameController implements Runnable {
         eagle = new Eagle();
         player.reset(PLAYER_START_X, PLAYER_START_Y);
         bullets.clear();
-        enemyManager.reset();
+        enemyManager.reset(difficulty);
         powerUpManager.reset();
         score = 0;
-        running = true;
-        paused = false;
-        gameThread = new Thread(this);
+        setRunning(true);
+        setPaused(false);
+        gameThread = new Thread(this, "game-loop");
         gameThread.start();
     }
 
     public void stop() {
-        running = false;
+        setRunning(false);
         try {
             if (gameThread != null) gameThread.join();
         } catch (InterruptedException e) {
@@ -68,17 +70,16 @@ public class GameController implements Runnable {
 
     @Override
     public void run() {
-        while (running) {
+        while (isRunning()) {
             long start = System.nanoTime();
 
-            if (!paused) update();
+            if (!isPaused()) update();
             gamePanel.repaint();
-
             long elapsed = System.nanoTime() - start;
-            long sleepTime = NS_PER_FRAME - elapsed;
-            if (sleepTime > 0) {
+            long sleepNs = NS_PER_FRAME - elapsed;
+            if (sleepNs > 0) {
                 try {
-                    Thread.sleep(sleepTime / 1_000_000);
+                    Thread.sleep(sleepNs / 1_000_000, (int)(sleepNs % 1_000_000));
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -138,8 +139,11 @@ public class GameController implements Runnable {
     private void checkEnemyBulletPlayerCollision() {
         for (Bullet b : enemyManager.getEnemyBullets()) {
             if (CollisionManager.overlaps(b, player)) {
-                player.loseLife();
-                b.setAlive(false); // cleaned up by EnemyManager on next update
+                if (!player.hasShield()) {
+                    player.loseLife();
+                    if (player.isAlive()) player.respawn(PLAYER_START_X, PLAYER_START_Y);
+                }
+                b.setAlive(false);
             }
         }
     }
@@ -162,25 +166,28 @@ public class GameController implements Runnable {
     }
 
     private void triggerGameEnd(boolean won) {
-        running = false;
+        setRunning(false);
         if (gameEndListener != null) {
             javax.swing.SwingUtilities.invokeLater(() -> gameEndListener.onGameEnd(won, score));
         }
     }
 
-    public void addScore(int points)            { score += points; }
-    public int  getScore()                      { return score; }
+    private synchronized void setRunning(boolean value) { running = value; }
+    private synchronized boolean isRunning() { return running; }
+    private synchronized void setPaused(boolean value) { paused = value; }
+    public synchronized void togglePause() { paused = !paused; }
+    public synchronized boolean isPaused() { return paused; }
 
-    public Eagle          getEagle()            { return eagle; }
-    public PlayerTank     getPlayer()           { return player; }
-    public InputHandler   getInputHandler()     { return inputHandler; }
-    public synchronized List<Bullet>    getBullets()       { return new ArrayList<>(bullets); }
-    public List<EnemyTank> getEnemies()         { return enemyManager.getEnemies(); }
-    public List<Bullet>   getEnemyBullets()     { return enemyManager.getEnemyBullets(); }
-    public List<PowerUp>  getPowerUps()         { return powerUpManager.getPowerUps(); }
-
-    public void togglePause()  { paused = !paused; }
-    public boolean isPaused()  { return paused; }
-
-    public void setGameEndListener(GameEndListener listener) { this.gameEndListener = listener; }
+    public void addScore(int points) {score+=points;}
+    public int getScore() { return score;}
+    public Eagle getEagle() { return eagle;}
+    public PlayerTank getPlayer() {return player;}
+    public synchronized List<Bullet> getBullets(){return new ArrayList<>(bullets);}
+    public List<EnemyTank> getEnemies(){return enemyManager.getEnemies();}
+    public List<Bullet> getEnemyBullets(){return enemyManager.getEnemyBullets();}
+    public List<PowerUp> getPowerUps(){return powerUpManager.getPowerUps();}
+    public void setDifficulty(Difficulty d) { this.difficulty = d; }
+    public void setGameEndListener(GameEndListener l) {
+        this.gameEndListener = l;
+    }
 }

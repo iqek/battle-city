@@ -1,12 +1,17 @@
 package ui;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
 
-// Sidebar panel showing stage, score, lives, and the pause button
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
 public class HudPanel extends JPanel {
 
-    private static final int WIDTH = 180;
     private static final Color BACKGROUND = new Color(80, 80, 80);
     private static final Font LABEL_FONT = new Font("Arial", Font.BOLD, 14);
     private static final Font VALUE_FONT = new Font("Arial", Font.PLAIN, 13);
@@ -18,7 +23,7 @@ public class HudPanel extends JPanel {
 
     public HudPanel() {
         setBackground(BACKGROUND);
-        setPreferredSize(new Dimension(WIDTH, 0)); // height stretches to match game canvas
+        setPreferredSize(new Dimension(180, 0));
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
         add(Box.createVerticalStrut(40));
@@ -31,7 +36,7 @@ public class HudPanel extends JPanel {
         add(makePauseButton());
         add(Box.createVerticalGlue());
 
-        pauseButton.setFocusable(false); // don't steal keyboard focus from the game
+        pauseButton.setFocusable(false);
     }
 
     private JPanel makeSection(String title, JLabel valueLabel) {

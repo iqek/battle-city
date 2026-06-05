@@ -6,7 +6,7 @@ import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
 
-public class LevelSelectPanel extends JPanel{
+public class LevelSelectPanel extends JPanel {
 
     private MainFrame mainFrame;
 

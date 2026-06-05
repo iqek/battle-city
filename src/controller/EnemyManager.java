@@ -1,59 +1,84 @@
 package controller;
 
-import model.GameMap;
-import model.entities.Bullet;
-import model.entities.EnemyTank;
-
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
-// Handles enemy spawning, AI updates, and enemy bullet lifecycle
+import core.Difficulty;
+import core.GameMap;
+import core.entities.Bullet;
+import core.entities.EnemyTank;
+
 public class EnemyManager {
 
-    public static final int TOTAL_ENEMIES = 20;
-
-    private static final int ENEMY_SPAWN_INTERVAL = 180;
     private static final int MAX_ENEMIES_ON_SCREEN = 4;
-    private static final int[][] SPAWN_POINTS = {
-            {0,                       0},
-            {12 * GameMap.CELL_PX,    0},
-            {24 * GameMap.CELL_PX,    0}
-    };
+    private static final int[][] SPAWN_POINTS = {{0,0},{12*GameMap.CELL_PX, 0}, {24*GameMap.CELL_PX, 0}};
 
     private final GameMap map;
     private final List<EnemyTank> enemies = new ArrayList<>();
     private final List<Bullet> enemyBullets = new ArrayList<>();
-    private int enemySpawnTimer = 0;
     private int enemiesSpawned = 0;
+    private boolean frozen = false;
+    private Difficulty difficulty = Difficulty.NORMAL;
+    private Thread freezeThread ;
+    private Thread spawnerThread;
 
     public EnemyManager(GameMap map) {
         this.map = map;
     }
 
-    public void reset() {
+    public synchronized void reset(Difficulty difficulty) {
+        this.difficulty = difficulty;
+        if(spawnerThread!= null) spawnerThread.interrupt();
+        if(freezeThread!= null) freezeThread.interrupt();
         enemies.clear();
         enemyBullets.clear();
-        enemySpawnTimer = 0;
         enemiesSpawned = 0;
+        frozen = false;
+        startSpawner();
     }
 
-    public void update() {
-        spawnEnemies();
-        updateEnemies();
+    private void startSpawner() {
+        spawnerThread = new Thread(()->{
+            while(enemiesSpawned < difficulty.totalEnemies) {
+                try {
+                    Thread.sleep(3000);
+                    while(enemyCount() >= MAX_ENEMIES_ON_SCREEN) {
+                        Thread.sleep(500);
+                    }
+                    spawnNext();
+                } catch(InterruptedException e) {
+                    return;
+                }
+            }
+        }, "enemy-spawner");
+        spawnerThread.start();
+    }
+
+    private synchronized void spawnNext() {
+        if(enemiesSpawned >= difficulty.totalEnemies) return;
+        int[] sp = SPAWN_POINTS[enemiesSpawned % SPAWN_POINTS.length];
+        enemies.add(new EnemyTank(sp[0], sp[1], difficulty.enemySpeed, map));
+        enemiesSpawned++;
+    }
+
+    public synchronized void update() {
+        if(!frozen) updateEnemies();
         updateEnemyBullets();
     }
 
-    private void spawnEnemies() {
-        if (enemiesSpawned >= TOTAL_ENEMIES) return;
-        if (enemies.size() >= MAX_ENEMIES_ON_SCREEN) return;
-        enemySpawnTimer++;
-        if (enemySpawnTimer < ENEMY_SPAWN_INTERVAL) return;
-
-        enemySpawnTimer = 0;
-        int[] sp = SPAWN_POINTS[enemiesSpawned % SPAWN_POINTS.length];
-        enemies.add(new EnemyTank(sp[0], sp[1], map));
-        enemiesSpawned++;
+    public synchronized void freeze() {
+        if(freezeThread!=null) freezeThread.interrupt();
+        frozen = true;
+        freezeThread = new Thread(()-> {
+            try {
+                Thread.sleep(5000);
+            }catch(InterruptedException e) {
+                return;
+            }
+            frozen = false;
+        }, "freeze-timer");
+        freezeThread.start();
     }
 
     private void updateEnemies() {
@@ -72,10 +97,15 @@ public class EnemyManager {
         enemyBullets.removeIf(b -> !b.isAlive());
     }
 
-    public boolean allEnemiesDefeated() {
-        return enemiesSpawned >= TOTAL_ENEMIES && enemies.isEmpty();
+    public synchronized boolean allEnemiesDefeated() {
+        return enemiesSpawned >= difficulty.totalEnemies && enemies.isEmpty();
     }
 
-    public List<EnemyTank> getEnemies()      { return new ArrayList<>(enemies); }
-    public List<Bullet>    getEnemyBullets() { return new ArrayList<>(enemyBullets); }
+    public synchronized void destroyAll() {
+        enemies.forEach(e -> e.setAlive(false));
+    }
+
+    public synchronized int enemyCount() { return enemies.size(); }
+    public synchronized List<EnemyTank> getEnemies() { return new ArrayList<>(enemies); }
+    public synchronized List<Bullet> getEnemyBullets() { return new ArrayList<>(enemyBullets); }
 }

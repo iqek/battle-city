@@ -1,4 +1,4 @@
-package model;
+package core;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 
 public class HighScoreManager {
+
     private static final String FILE_PATH = "resources/scores.csv";
 
     public static void save(HighScore hs){
