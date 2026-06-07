@@ -29,7 +29,7 @@ public class MapEditorPanel extends JPanel {
         try {
             spriteSheet = new Sprites("/images/sprites.png");
         } catch(IOException e){
-            e.printStackTrace();
+            System.err.println("could not load sprites: " + e.getMessage());
         }
 
         add(createGrid(), BorderLayout.CENTER);
@@ -101,6 +101,7 @@ public class MapEditorPanel extends JPanel {
 
     private JPanel createSideBar(){
         JPanel bar = new JPanel(new GridLayout(0,2));
+        bar.setPreferredSize(new Dimension(192, GameMap.ROWS * Sprites.DRAW_SIZE));
 
         for(TileType type : TileType.values()){
             BufferedImage img = getSpriteForTile(type);
@@ -166,4 +167,8 @@ public class MapEditorPanel extends JPanel {
         return spriteSheet.getSpriteForTile(type);
     }
 
+    @Override
+    public Dimension getPreferredSize() {
+        return new Dimension(GameMap.COLS * Sprites.DRAW_SIZE + 192, GameMap.ROWS * Sprites.DRAW_SIZE);
+    }
 }

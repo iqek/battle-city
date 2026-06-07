@@ -70,9 +70,9 @@ public class Sprites {
             case BRICK -> getBrick();
             case STEEL -> getSteel();
             case WATER -> getWater();
-            case BUSH  -> getBush();
-            case ICE   -> getIce();
-            default    -> null;
+            case BUSH -> getBush();
+            case ICE -> getIce();
+            default -> null;
         };
     }
 }

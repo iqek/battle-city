@@ -1,4 +1,4 @@
-package controller;
+package game;
 
 import core.GameMap;
 import core.entities.Entity;

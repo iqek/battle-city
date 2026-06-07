@@ -2,11 +2,10 @@ package ui;
 
 import javax.swing.*;
 
-import controller.GameController;
-import controller.GameEndListener;
+import game.GameController;
 import core.*;
 
-public class MainFrame extends JFrame implements GameEndListener{
+public class MainFrame extends JFrame {
 
     private GamePanel gamePanel;
     private GameController gameController;
@@ -32,17 +31,18 @@ public class MainFrame extends JFrame implements GameEndListener{
         levelSelectPanel = new LevelSelectPanel(this);
         helpPanel = new HelpPanel();
         highScorePanel = new HighScorePanel();
-        gameController.setGameEndListener(this);
+        gameController.setMainFrame(this);
 
         optionsPanel = new OptionsPanel();
         optionsPanel.setOnBack(() -> showPanel(titlePanel));
 
         titlePanel = new TitlePanel();
-        titlePanel.setOnNewGame(() -> showPanel(levelSelectPanel));
+        titlePanel.setOnNewGame(() -> { levelSelectPanel.refresh(); showPanel(levelSelectPanel); });
         titlePanel.setOnConstruction(() -> showPanel(mapEditorPanel));
         titlePanel.setOnOptions(() -> showPanel(optionsPanel));
+        levelSelectPanel.setOnBack(() -> showPanel(titlePanel));
 
-        setContentPane(mapEditorPanel);
+        setContentPane(titlePanel);
         setJMenuBar(createMenuBar());
 
         pack();
@@ -60,9 +60,9 @@ public class MainFrame extends JFrame implements GameEndListener{
         JMenuBar menuBar = new JMenuBar();
 
         JMenu gameMenu = new JMenu("Game");
-        gameMenu.add(new JMenuItem("Main Menu")).addActionListener(e -> showPanel(titlePanel));
         JMenuItem newGameItem = new JMenuItem("New Game");
         newGameItem.addActionListener(e -> {
+            levelSelectPanel.refresh();
             showPanel(levelSelectPanel);
         });
         gameMenu.add(newGameItem);
@@ -100,7 +100,6 @@ public class MainFrame extends JFrame implements GameEndListener{
     public void startGame(String mapName) {
         try {
             gameController.stop();
-            gamePanel.setCurrentLevel(mapName);
             gameController.setDifficulty(optionsPanel.getSelectedDifficulty());
             gamePanel.setCurrentLevel(mapName);
             gameMap.loadFromFile("resources/maps/" + mapName + ".txt");
@@ -122,6 +121,7 @@ public class MainFrame extends JFrame implements GameEndListener{
             HighScoreManager.save(new HighScore(name, score, date, time, gamePanel.getCurrentLevel()));
         }
 
+        highScorePanel.refresh();
         showPanel(highScorePanel);
     }
 

@@ -15,7 +15,7 @@ public class HighScoreManager {
             writer.write(hs.getName() + "," + hs.getScore() + "," + hs.getDate() + "," + hs.getTime() + "," + hs.getMap());
             writer.newLine();
         } catch(IOException e){
-            e.printStackTrace();
+            System.err.println("could not save high score: " + e.getMessage());
         }
     }
 
@@ -34,7 +34,7 @@ public class HighScoreManager {
                 }
             }
         } catch(IOException e){
-            e.printStackTrace();
+            System.err.println("could not read high scores: " + e.getMessage());
         }
 
         Collections.sort(list, new Comparator<HighScore>(){

@@ -1,4 +1,4 @@
-package controller;
+package game;
 
 import java.awt.Point;
 import java.util.ArrayList;
@@ -70,6 +70,7 @@ public class EnemyManager {
     public synchronized void freeze() {
         if(freezeThread!=null) freezeThread.interrupt();
         frozen = true;
+        setAllFrozen(true);
         freezeThread = new Thread(()-> {
             try {
                 Thread.sleep(5000);
@@ -77,8 +78,13 @@ public class EnemyManager {
                 return;
             }
             frozen = false;
+            setAllFrozen(false);
         }, "freeze-timer");
         freezeThread.start();
+    }
+
+    public synchronized void setAllFrozen(boolean frozen) {
+        for(EnemyTank e : enemies) e.setFrozen(frozen);
     }
 
     private void updateEnemies() {
@@ -86,7 +92,8 @@ public class EnemyManager {
             e.update();
             if (e.shouldShoot()) {
                 Point origin = e.getBulletSpawnPoint(Bullet.SIZE);
-                enemyBullets.add(new Bullet(origin.x, origin.y, e.getDirection(), 0, map));
+                int stars = (difficulty == Difficulty.HARD) ? 3 : 0;
+                enemyBullets.add(new Bullet(origin.x, origin.y, e.getDirection(), stars, map));
             }
         }
         enemies.removeIf(e -> !e.isAlive());
@@ -102,7 +109,7 @@ public class EnemyManager {
     }
 
     public synchronized void destroyAll() {
-        enemies.forEach(e -> e.setAlive(false));
+        for(EnemyTank e : enemies) e.setAlive(false);
     }
 
     public synchronized int enemyCount() { return enemies.size(); }
