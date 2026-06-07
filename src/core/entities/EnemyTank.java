@@ -2,7 +2,7 @@ package core.entities;
 
 import java.util.Random;
 
-import controller.CollisionManager;
+import game.CollisionManager;
 import core.GameMap;
 
 public class EnemyTank extends Tank {
@@ -12,6 +12,7 @@ public class EnemyTank extends Tank {
     private Thread directionThread;
     private Thread shootThread;
     private boolean readyToShoot = false;
+    private boolean frozen = false;
 
     public EnemyTank(int x, int y, int speed, GameMap map) {
         super(x,y,speed,1);
@@ -29,7 +30,7 @@ public class EnemyTank extends Tank {
                 } catch(InterruptedException e) {
                     return;
                 }
-                if(isAlive()) pickRandomDirection();
+                if(isAlive() && !frozen) pickRandomDirection();
             }
         }, "enemy-dir");
 
@@ -40,7 +41,7 @@ public class EnemyTank extends Tank {
                 }catch(InterruptedException e){
                     return;
                 }
-                if(isAlive()) setReadyToShoot();
+                if(isAlive() && !frozen) setReadyToShoot();
             }
         }, "enemy-shoot");
 
@@ -53,7 +54,7 @@ public class EnemyTank extends Tank {
         super.setAlive(alive);
 
         if(!alive) {
-            if(direction != null)  directionThread.interrupt();
+            if(directionThread != null) directionThread.interrupt();
             if(shootThread != null) shootThread.interrupt();
         }
     }
@@ -82,6 +83,7 @@ public class EnemyTank extends Tank {
         setDirection(dirs[random.nextInt(dirs.length)]);
     }
 
+    public synchronized void setFrozen(boolean frozen) { this.frozen = frozen; }
     private synchronized void setReadyToShoot() { readyToShoot = true; }
 
     public boolean shouldShoot() {

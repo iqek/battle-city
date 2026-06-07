@@ -9,29 +9,30 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.BorderFactory;
 
 public class HudPanel extends JPanel {
 
     private static final Color BACKGROUND = new Color(80, 80, 80);
-    private static final Font LABEL_FONT = new Font("Arial", Font.BOLD, 14);
-    private static final Font VALUE_FONT = new Font("Arial", Font.PLAIN, 13);
+    private static final Font HUD_FONT = Fonts.get(10f);
 
-    private final JLabel stageValue = new JLabel("-");
-    private final JLabel scoreValue = new JLabel("0");
-    private final JLabel livesValue = new JLabel("-");
+    private final JLabel stageRow  = new JLabel();
+    private final JLabel scoreRow  = new JLabel();
+    private final JLabel livesRow  = new JLabel();
     private final JButton pauseButton = new JButton("PAUSE");
 
     public HudPanel() {
         setBackground(BACKGROUND);
-        setPreferredSize(new Dimension(180, 0));
+        setPreferredSize(new Dimension(192, 0));
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 8));
 
-        add(Box.createVerticalStrut(40));
-        add(makeSection("STAGE", stageValue));
-        add(Box.createVerticalStrut(40));
-        add(makeSection("SCORE", scoreValue));
-        add(Box.createVerticalStrut(40));
-        add(makeSection("LIVES", livesValue));
+        add(Box.createVerticalStrut(50));
+        add(makeRow(stageRow));
+        add(Box.createVerticalStrut(30));
+        add(makeRow(scoreRow));
+        add(Box.createVerticalStrut(30));
+        add(makeRow(livesRow));
         add(Box.createVerticalStrut(40));
         add(makePauseButton());
         add(Box.createVerticalGlue());
@@ -39,28 +40,19 @@ public class HudPanel extends JPanel {
         pauseButton.setFocusable(false);
     }
 
-    private JPanel makeSection(String title, JLabel valueLabel) {
-        JPanel section = new JPanel();
-        section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
-        section.setBackground(BACKGROUND);
-        section.setAlignmentX(LEFT_ALIGNMENT);
-
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(LABEL_FONT);
-        titleLabel.setForeground(Color.WHITE);
-
-        valueLabel.setFont(VALUE_FONT);
-        valueLabel.setForeground(Color.WHITE);
-
-        section.add(titleLabel);
-        section.add(valueLabel);
-        return section;
+    private JLabel makeRow(JLabel lbl) {
+        lbl.setFont(HUD_FONT);
+        lbl.setForeground(Color.WHITE);
+        lbl.setAlignmentX(LEFT_ALIGNMENT);
+        return lbl;
     }
 
     private JPanel makePauseButton() {
+        pauseButton.setFont(Fonts.get(9f));
         pauseButton.setBackground(Color.DARK_GRAY);
         pauseButton.setForeground(Color.WHITE);
-        pauseButton.setMaximumSize(new Dimension(140, 35));
+        pauseButton.setFocusPainted(false);
+        pauseButton.setMaximumSize(new Dimension(160, 35));
         pauseButton.setAlignmentX(LEFT_ALIGNMENT);
 
         JPanel wrapper = new JPanel();
@@ -71,11 +63,10 @@ public class HudPanel extends JPanel {
         return wrapper;
     }
 
-    // Called every frame from the canvas paintComponent (runs on EDT)
     public void update(String level, int score, int lives) {
-        stageValue.setText(level.isEmpty() ? "-" : level);
-        scoreValue.setText(String.valueOf(score));
-        livesValue.setText("<3 x" + lives);
+        stageRow.setText("STAGE  " + (level == null || level.isEmpty() ? "-" : level));
+        scoreRow.setText("SCORE  " + score);
+        livesRow.setText("LIVES  " + lives + "x <3");
     }
 
     public JButton getPauseButton() { return pauseButton; }

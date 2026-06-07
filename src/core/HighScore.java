@@ -12,7 +12,7 @@ public class HighScore {
         this.score = score;
         this.date = date;
         this.time = time;
-        this.map   = map;
+        this.map = map;
     }
 
     public String getName(){ return name;}

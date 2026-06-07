@@ -1,4 +1,4 @@
-package controller;
+package game;
 
 import java.awt.Point;
 import java.util.ArrayList;
@@ -8,11 +8,12 @@ import core.Difficulty;
 import core.GameMap;
 import core.entities.*;
 import ui.GamePanel;
+import ui.MainFrame;
 
 public class GameController implements Runnable{
 
     private static final int FPS = 60;
-    private static final long NS_PER_FRAME = 1_000_000_000 / FPS;
+    private static final long NS_PER_FRAME = 1000000000 / FPS;
 
     private static final int PLAYER_START_X = 8  * GameMap.CELL_PX;
     private static final int PLAYER_START_Y = 24 * GameMap.CELL_PX;
@@ -22,7 +23,7 @@ public class GameController implements Runnable{
     private final GameMap map;
     private final GamePanel gamePanel;
     private final InputHandler inputHandler;
-    private GameEndListener gameEndListener;
+    private MainFrame mainFrame;
 
     private final EnemyManager enemyManager;
     private final PowerUpManager powerUpManager;
@@ -64,7 +65,7 @@ public class GameController implements Runnable{
         try {
             if (gameThread != null) gameThread.join();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            System.err.println("game thread interrupted while stopping");
         }
     }
 
@@ -79,15 +80,15 @@ public class GameController implements Runnable{
             long sleepNs = NS_PER_FRAME - elapsed;
             if (sleepNs > 0) {
                 try {
-                    Thread.sleep(sleepNs / 1_000_000, (int)(sleepNs % 1_000_000));
+                    Thread.sleep(sleepNs / 1000000, (int)(sleepNs % 1000000));
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    System.err.println("game loop sleep interrupted");
                 }
             }
         }
     }
 
-    public void update() {
+    private void update() {
         if (eagle.isDestroyed() || !player.isAlive()) {
             triggerGameEnd(false);
             return;
@@ -115,7 +116,10 @@ public class GameController implements Runnable{
     }
 
     public synchronized void tryFire() {
-        long activeBullets = bullets.stream().filter(Bullet::isAlive).count();
+        int activeBullets = 0;
+        for(Bullet b : bullets) {
+            if(b.isAlive()) activeBullets++;
+        }
         if (activeBullets >= player.getMaxBullets()) return;
 
         Point origin = player.getBulletSpawnPoint(Bullet.SIZE);
@@ -128,7 +132,7 @@ public class GameController implements Runnable{
             for (EnemyTank e : enemies) {
                 if (CollisionManager.overlaps(b, e)) {
                     e.loseLife();
-                    if (!e.isAlive()) addScore(100);
+                    if (!e.isAlive()) addScore(difficulty.scorePerKill);
                     return true;
                 }
             }
@@ -167,15 +171,16 @@ public class GameController implements Runnable{
 
     private void triggerGameEnd(boolean won) {
         setRunning(false);
-        if (gameEndListener != null) {
-            javax.swing.SwingUtilities.invokeLater(() -> gameEndListener.onGameEnd(won, score));
-        }
+        if (mainFrame != null) mainFrame.onGameEnd(won, score);
     }
 
     private synchronized void setRunning(boolean value) { running = value; }
     private synchronized boolean isRunning() { return running; }
     private synchronized void setPaused(boolean value) { paused = value; }
-    public synchronized void togglePause() { paused = !paused; }
+    public synchronized void togglePause() {
+        paused = !paused;
+        enemyManager.setAllFrozen(paused);
+    }
     public synchronized boolean isPaused() { return paused; }
 
     public void addScore(int points) {score+=points;}
@@ -187,7 +192,7 @@ public class GameController implements Runnable{
     public List<Bullet> getEnemyBullets(){return enemyManager.getEnemyBullets();}
     public List<PowerUp> getPowerUps(){return powerUpManager.getPowerUps();}
     public void setDifficulty(Difficulty d) { this.difficulty = d; }
-    public void setGameEndListener(GameEndListener l) {
-        this.gameEndListener = l;
+    public void setMainFrame(MainFrame m) {
+        this.mainFrame = m;
     }
 }

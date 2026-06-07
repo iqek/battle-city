@@ -14,19 +14,16 @@ public class OptionsPanel extends JPanel{
     public OptionsPanel() {
         setBackground(Color.BLACK);
         setFocusable(true);
+        setLayout(null);
 
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                Difficulty[] values = Difficulty.values();
-                int idx = selectedDifficulty.ordinal();
-                switch (e.getKeyCode()) {
-                    case KeyEvent.VK_UP    -> { selectedDifficulty = values[(idx - 1 + values.length) % values.length]; repaint(); }
-                    case KeyEvent.VK_DOWN  -> { selectedDifficulty = values[(idx + 1) % values.length]; repaint(); }
-                    case KeyEvent.VK_ENTER, KeyEvent.VK_ESCAPE -> { if (onBack != null) onBack.run(); }
-                }
-            }
-        });
+        JButton backBtn = new JButton("<-");
+        backBtn.setFont(Fonts.get(10f));
+        backBtn.setBackground(Color.DARK_GRAY);
+        backBtn.setForeground(Color.WHITE);
+        backBtn.setFocusPainted(false);
+        backBtn.setBounds(20, GameMap.ROWS * Sprites.DRAW_SIZE - 60, 100, 35);
+        backBtn.addActionListener(e -> { if(onBack != null) onBack.run(); });
+        add(backBtn);
 
         addMouseListener(new MouseAdapter() {
             @Override
@@ -50,16 +47,16 @@ public class OptionsPanel extends JPanel{
         super.paintComponent(g);
         int cx = getWidth() / 2;
 
-        g.setFont(new Font("Arial", Font.BOLD, 28));
+        g.setFont(Fonts.get(16f));
         FontMetrics titleFm = g.getFontMetrics();
         g.setColor(Color.WHITE);
         g.drawString("OPTIONS", cx - titleFm.stringWidth("OPTIONS") / 2, getHeight() / 4);
 
-        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.setFont(Fonts.get(10f));
         g.setColor(new Color(180, 180, 180));
         g.drawString("DIFFICULTY", cx - g.getFontMetrics().stringWidth("DIFFICULTY") / 2, getHeight() / 4 + 50);
 
-        g.setFont(new Font("Arial", Font.BOLD, 22));
+        g.setFont(Fonts.get(12f));
         FontMetrics fm = g.getFontMetrics();
         Difficulty[] values = Difficulty.values();
         int startY = difficultyStartY();
@@ -70,16 +67,12 @@ public class OptionsPanel extends JPanel{
             g.drawString(values[i].name(), cx - fm.stringWidth(values[i].name()) / 2, y);
         }
 
-        g.setFont(new Font("Arial", Font.PLAIN, 16));
-        g.setColor(Color.GRAY);
-        String hint = "ENTER / ESC to go back";
-        g.drawString(hint, cx - g.getFontMetrics().stringWidth(hint) / 2, getHeight() - 40);
     }
 
     private int difficultyStartY() { return getHeight() / 2; }
 
     public Difficulty getSelectedDifficulty() { return selectedDifficulty; }
-    public void setOnBack(Runnable r)          { this.onBack = r; }
+    public void setOnBack(Runnable r) { this.onBack = r; }
 
     @Override
     public Dimension getPreferredSize() {

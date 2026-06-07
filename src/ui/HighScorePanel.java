@@ -16,8 +16,8 @@ public class HighScorePanel extends JPanel {
         setLayout(new BorderLayout());
 
         JLabel title = new JLabel("HIGH SCORES", SwingConstants.CENTER);
-        title.setFont(new Font("Arial", Font.BOLD, 26));
-        title.setForeground(new Color(255, 215, 0));
+        title.setFont(Fonts.get(14f));
+        title.setForeground(Color.WHITE);
         title.setBorder(BorderFactory.createEmptyBorder(24, 0, 16, 0));
         add(title, BorderLayout.NORTH);
 
@@ -37,7 +37,7 @@ public class HighScorePanel extends JPanel {
         if (scores.isEmpty()) {
             JLabel empty = new JLabel("No scores yet!");
             empty.setForeground(Color.GRAY);
-            empty.setFont(new Font("Arial", Font.PLAIN, 14));
+            empty.setFont(Fonts.getOperator(16f));
             empty.setAlignmentX(CENTER_ALIGNMENT);
             listPanel.add(empty);
         }
@@ -49,8 +49,8 @@ public class HighScorePanel extends JPanel {
                     + "  |  " + hs.getMap()
                     + "  |  " + hs.getDate() + "  " + hs.getTime();
             JLabel lbl = new JLabel(text);
-            lbl.setFont(new Font("Arial", Font.PLAIN, 14));
-            lbl.setForeground(i == 0 ? new Color(255, 215, 0) : Color.WHITE); // gold for #1
+            lbl.setFont(Fonts.getOperator(16f));
+            lbl.setForeground(Color.WHITE); // gold for #1
             lbl.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
             listPanel.add(lbl);
         }

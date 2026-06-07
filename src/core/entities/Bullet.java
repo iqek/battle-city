@@ -1,6 +1,6 @@
 package core.entities;
 
-import controller.CollisionManager;
+import game.CollisionManager;
 import core.GameMap;
 import core.TileType;
 

@@ -1,4 +1,4 @@
-package controller;
+package game;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -9,7 +9,7 @@ import core.entities.Tank.Direction;
 public class InputHandler implements KeyListener{
 
     private boolean fireRequested;
-    PlayerTank player;
+    private PlayerTank player;
 
     public InputHandler(PlayerTank player) {
         this.player = player;

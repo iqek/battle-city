@@ -4,7 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
-import controller.GameController;
+import game.GameController;
 import core.GameMap;
 import core.TileType;
 import core.entities.*;
@@ -86,9 +86,9 @@ public class Renderer {
     private void drawEnemies(Graphics g) {
         for (EnemyTank e : gameController.getEnemies()) {
             BufferedImage sprite = switch (e.getDirection()) {
-                case UP    -> sprites.getEnemyUp();
-                case DOWN  -> sprites.getEnemyDown();
-                case LEFT  -> sprites.getEnemyLeft();
+                case UP -> sprites.getEnemyUp();
+                case DOWN -> sprites.getEnemyDown();
+                case LEFT -> sprites.getEnemyLeft();
                 case RIGHT -> sprites.getEnemyRight();
             };
             g.drawImage(sprite, e.getX() - Tank.DRAW_OFFSET, e.getY() - Tank.DRAW_OFFSET, Tank.SIZE, Tank.SIZE, null);
@@ -119,7 +119,7 @@ public class Renderer {
                 case SHOVEL-> sprites.getPuShovel();
                 case SHIELD-> sprites.getPuShield();
             };
-            g.drawImage(sprite, pu.getX(), pu.getY(), 24, 24, null);
+            g.drawImage(sprite, pu.getX(), pu.getY(), 36, 36, null);
         }
     }
 

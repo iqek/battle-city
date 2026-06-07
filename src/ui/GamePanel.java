@@ -8,7 +8,7 @@ import java.awt.Graphics;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
-import controller.GameController;
+import game.GameController;
 import core.GameMap;
 
 public class GamePanel extends JPanel{
@@ -65,4 +65,9 @@ public class GamePanel extends JPanel{
 
     public String getCurrentLevel() {return currentLevel;}
     public void setCurrentLevel(String level) {currentLevel = level;}
+
+    @Override
+    public Dimension getPreferredSize() {
+        return new Dimension(GameMap.COLS * Sprites.DRAW_SIZE + 192, GameMap.ROWS * Sprites.DRAW_SIZE);
+    }
 }
